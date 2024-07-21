@@ -1,0 +1,180 @@
+package flashcards
+
+import java.io.File
+import kotlin.random.Random
+
+fun main(arr: Array<String>) {
+    if (arr.isNotEmpty()) checkCommandLine(arr)
+    while (true) {
+        "\nInput the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):".toOutput()
+        val choice = readln().toInput()
+        when (choice) {
+            "exit" -> {
+                if (Set.commandLine.containsKey("-export")) Set.commandLine["-export"]?.let { exportFile(it) }
+                break
+            }
+
+            "add" -> add()
+            "remove" -> remove()
+            "import" -> import()
+            "export" -> export()
+            "ask" -> ask()
+            "log" -> log()
+            "hardest card" -> hardestCard()
+            "reset stats" -> resetStats()
+        }
+    }
+    println("Bye bye!")
+}
+
+
+fun checkCommandLine(arr: Array<String>) {
+    for (i in arr.indices) {
+        if (arr[i] == "-import" || arr[i] == "-export") Set.commandLine[arr[i]] = arr[i + 1]
+    }
+    if (Set.commandLine.containsKey("-import")) Set.commandLine["-import"]?.let { importFile(it) }
+}
+
+fun add() {
+    "The card:".toOutput()
+    val term = readln().toInput()
+    if (term.checkForDuplicates(Set.terms).isNotEmpty()) {
+        "The card \"$term\" already exists.\n".toOutput()
+        return
+    }
+    "The definition of the card:".toOutput()
+    val definition = readln().toInput()
+    if (definition.checkForDuplicates(Set.definitions).isNotEmpty()) {
+        "The definition \"$definition\" already exists.\n".toOutput()
+        return
+    }
+    addCard(term, definition, 0)
+    "The pair (\"$term\":\"$definition\") has been added.\n".toOutput()
+}
+
+fun remove() {
+    "Which card?".toOutput()
+    val term = readln().toInput()
+    val definition = term.checkForDuplicates(Set.terms)
+    if (definition.isNotEmpty()) {
+        "The card has been removed.\n".toOutput()
+        Set.cards.removeAt(Set.cards.findIndex(term))
+        Set.terms.remove(term)
+        Set.definitions.remove(definition)
+    } else "Can't remove \"$term\": there is no such card.\n".toOutput()
+}
+
+fun import() {
+    "File name:".toOutput()
+    val fileName = readln().toInput()
+    importFile(fileName)
+}
+
+fun importFile(fileName: String) {
+    val file = File(fileName)
+    if (!file.exists()) "File not found.\n".toOutput() else {
+        val lines = file.readLines()
+        for (line in lines) {
+            val (term, definition, mistake) = line.split(";")
+            if (Set.terms.containsKey(term)) {
+                val index = Set.cards.findIndex(term)
+                Set.cards[index] = Card(term, definition, mistake.toInt())
+            } else addCard(term, definition, mistake.toInt())
+        }
+        "${lines.size} cards have been loaded.\n".toOutput()
+    }
+}
+
+fun export() {
+    "File name:".toOutput()
+    val fileName = readln().toInput()
+    exportFile(fileName)
+}
+
+fun exportFile(fileName: String) {
+    val file = File(fileName)
+    val sb = buildString {
+        for (card in Set.cards) {
+            append("${card.term};${card.definition};${card.mistake}\n")
+        }
+    }
+    file.writeText(sb)
+    "${Set.cards.size} cards have been saved.\n".toOutput()
+}
+
+fun ask() {
+    "How many times to ask?".toOutput()
+    val count = readln().toInput().toInt()
+    repeat(count) {
+        val randomInt = Random.nextInt(Set.cards.size)
+        val randomCard = Set.cards[randomInt]
+        "Print the definition of \"${randomCard.term}\":".toOutput()
+        val answer = readln().toInput()
+        if (answer != randomCard.definition) {
+            Set.cards[randomInt].mistake += 1
+            "Wrong. The right answer is \"${randomCard.definition}\"".toOutput()
+            val search = answer.checkForDuplicates(Set.definitions)
+            if (search.isEmpty()) ".\n".toOutput() else ", but your definition is correct for \"$search\".\n".toOutput()
+        } else "Correct!\n".toOutput()
+    }
+}
+
+fun log() {
+    "File name:".toOutput()
+    val fileName = readln().toInput()
+    val file = File(fileName)
+    "The log has been saved.\n".toOutput()
+    file.writeText(Set.logStr.toString())
+}
+
+fun hardestCard() {
+    val maxMistake = Set.cards.filter { m -> m.mistake == Set.cards.maxOf { it.mistake } && m.mistake != 0 }
+    when (maxMistake.size) {
+        0 -> "There are no cards with errors.\n".toOutput()
+        1 -> "The hardest card is \"${maxMistake[0].term}\". You have ${maxMistake[0].mistake} errors answering it.\n".toOutput()
+        else -> "The hardest cards are ${
+            maxMistake.map { it.term }.joinToString("\", \"", "\"", "\"")
+        }. You have ${maxMistake[0].mistake} errors answering them.\n".toOutput()
+    }
+}
+
+fun resetStats() {
+    for (i in Set.cards.indices) {
+        Set.cards[i] = Set.cards[i].copy(mistake = 0)
+    }
+    "Card statistics have been reset.\n".toOutput()
+}
+
+fun String.toInput(): String {
+    Set.logStr.append("$this\n")
+    return this
+}
+
+fun String.toOutput() {
+    print(this)
+    Set.logStr.append("$this\n")
+}
+
+fun String.checkForDuplicates(words: MutableMap<String, String>): String = words[this] ?: ""
+
+fun MutableList<Card>.findIndex(str: String): Int = this.indexOf(this.filter { it.term == str }[0])
+
+fun addCard(term: String, definition: String, mistake: Int) {
+    Set.cards.add(Card(term = term, definition = definition, mistake = mistake))
+    Set.terms[term] = definition
+    Set.definitions[definition] = term
+}
+
+object Set {
+    val cards = mutableListOf<Card>()
+    val terms = mutableMapOf<String, String>()
+    val definitions = mutableMapOf<String, String>()
+    val logStr = StringBuilder()
+    val commandLine = mutableMapOf<String, String>()
+}
+
+data class Card(
+    val term: String,
+    val definition: String,
+    var mistake: Int = 0
+)
