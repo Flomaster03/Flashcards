@@ -1,0 +1,13 @@
+package flashcards
+
+fun main() {
+
+    val card = Card(readln(), readln(), readln())
+    println(if (card.compare()) "Your answer is right!" else "Your answer is wrong...")
+}
+
+class Card(val card: String, private val definition: String, private val answer: String) {
+
+    fun compare(): Boolean = answer == definition
+}
+
