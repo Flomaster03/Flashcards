@@ -1,0 +1,29 @@
+package flashcards
+
+fun main() {
+
+    create()
+    check()
+}
+
+fun create() = Set.cards.addAll(List("Input the number of cards:".toInput().toInt()) { Card(it + 1) })
+
+fun check() {
+    repeat(Set.cards.size) {
+        val answer = "Print the definition of \"${Set.cards[it].card}\":".toInput()
+        println(if (answer == Set.cards[it].definition) "Correct!" else "Wrong. The right answer is \"${Set.cards[it].definition}\".")
+    }
+
+}
+
+fun String.toInput(): String = println(this).run { readln() }
+
+object Set {
+    val cards = mutableListOf<Card>()
+}
+
+data class Card(
+    val id: Int,
+    val card: String = "Card #$id:".toInput(),
+    val definition: String = "The definition for card #$id:".toInput()
+)
