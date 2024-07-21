@@ -1,0 +1,14 @@
+package flashcards
+
+fun main() {
+    input()
+}
+
+fun input() {
+    val card = "Card:".toInput()
+    println(card)
+    val definition = "Definition:".toInput()
+    println(definition)
+}
+
+fun String.toInput(): String = println(this).run { readln() }
