@@ -1,0 +1,59 @@
+package flashcards
+
+fun main() {
+    create()
+    check()
+}
+
+fun create() {
+    repeat("Input the number of cards:".toInput().toInt()) {
+        var term = ""
+        var definition = ""
+        println("Card #${it + 1}:")
+        while (true) {
+            term = readln()
+            if (term.checkForDuplicates(Set.terms).isNotEmpty()) {
+                println("The term \"$term\" already exists. Try again:")
+                continue
+            } else break
+        }
+        println("The definition for card #${it + 1}:")
+        while (true) {
+            definition = readln()
+            if (definition.checkForDuplicates(Set.definitions).isNotEmpty()) {
+                println("The definition \"$definition\" already exists. Try again:")
+                continue
+            } else break
+        }
+        Set.terms[term] = definition
+        Set.definitions[definition] = term
+        Set.cards.add(Card(card = term, definition = definition))
+    }
+}
+
+
+fun check() {
+    repeat(Set.cards.size) {
+        val answer = "Print the definition of \"${Set.cards[it].card}\":".toInput()
+        if (answer != Set.cards[it].definition) {
+            print("Wrong. The right answer is \"${Set.cards[it].definition}\"")
+            val search = answer.checkForDuplicates(Set.definitions)
+            println(if (search.isEmpty()) "." else ", but your definition is correct for \"$search\".")
+        } else println("Correct!")
+    }
+}
+
+fun String.toInput(): String = println(this).run { readln() }
+
+fun String.checkForDuplicates(words: MutableMap<String, String>): String = words[this] ?: ""
+
+object Set {
+    val cards = mutableListOf<Card>()
+    val terms = mutableMapOf<String, String>()
+    val definitions = mutableMapOf<String, String>()
+}
+
+data class Card(
+    val card: String,
+    val definition: String
+)
